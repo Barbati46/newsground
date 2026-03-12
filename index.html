@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Newsground — AI Research for Journalists</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f0e8;
+    --white: #fffdf8;
+    --ink: #0f0e0c;
+    --ink-muted: #7a7060;
+    --ink-dim: #b0a898;
+    --border: #d8d0c0;
+    --border-light: #e8e2d8;
+    --accent: #c8441a;
+    --accent-bg: rgba(200,68,26,0.06);
+  }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', sans-serif; font-weight: 300; min-height: 100vh; line-height: 1.6; }
+  body::after { content:''; position:fixed; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E"); pointer-events:none; z-index:9999; }
+  .app { display:grid; grid-template-rows:auto 1fr; min-height:100vh; }
+  header { border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:center; justify-content:space-between; height:56px; position:sticky; top:0; background:rgba(245,240,232,0.95); backdrop-filter:blur(12px); z-index:100; }
+  .logo { font-family:'Playfair Display',serif; font-size:1.2rem; font-weight:900; letter-spacing:-0.02em; color:var(--ink); display:flex; align-items:center; gap:0.5rem; }
+  .logo-dot { width:6px; height:6px; background:var(--accent); border-radius:50%; animation:pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
+  .header-right { display:flex; align-items:center; gap:1.5rem; }
+  .header-tag { font-size:0.65rem; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; color:var(--accent); border:1px solid var(--accent); padding:0.2rem 0.6rem; border-radius:2px; }
+  .header-sub { font-size:0.75rem; color:var(--ink-muted); font-family:'IBM Plex Mono',monospace; }
+  main { display:grid; grid-template-columns:360px 1fr; height:calc(100vh - 56px); }
+  .left-panel { border-right:1px solid var(--border); display:flex; flex-direction:column; overflow-y:auto; background:var(--white); }
+  .panel-section { padding:1.5rem; border-bottom:1px solid var(--border); }
+  .panel-label { font-size:0.65rem; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; color:var(--ink-muted); margin-bottom:1rem; display:flex; align-items:center; gap:0.5rem; }
+  .panel-label::after { content:''; flex:1; height:1px; background:var(--border); }
+  .field { margin-bottom:1rem; }
+  .field label { display:block; font-size:0.72rem; font-weight:500; color:var(--ink-muted); margin-bottom:0.4rem; letter-spacing:0.04em; }
+  .field input,.field select,.field textarea { width:100%; background:var(--bg); border:1px solid var(--border); color:var(--ink); padding:0.65rem 0.9rem; font-family:'DM Sans',sans-serif; font-size:0.88rem; border-radius:2px; transition:border-color 0.2s; outline:none; }
+  .field input:focus,.field select:focus,.field textarea:focus { border-color:var(--ink-muted); }
+  .field textarea { resize:vertical; min-height:80px; line-height:1.5; }
+  .field select option { background:var(--white); }
+  .module-toggles { display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; }
+  .module-toggle { display:flex; align-items:center; gap:0.5rem; cursor:pointer; padding:0.5rem 0.7rem; border:1px solid var(--border); border-radius:2px; background:var(--bg); transition:all 0.15s; user-select:none; }
+  .module-toggle:hover { border-color:var(--ink-dim); }
+  .module-toggle.active { border-color:var(--accent); background:var(--accent-bg); }
+  .module-toggle input { display:none; }
+  .toggle-dot { width:7px; height:7px; border-radius:50%; border:1.5px solid var(--border); flex-shrink:0; transition:all 0.15s; }
+  .module-toggle.active .toggle-dot { background:var(--accent); border-color:var(--accent); }
+  .toggle-label { font-size:0.74rem; color:var(--ink-muted); line-height:1.3; }
+  .module-toggle.active .toggle-label { color:var(--ink); }
+  .search-btn { width:100%; background:var(--ink); color:var(--bg); border:none; padding:0.85rem; font-family:'DM Sans',sans-serif; font-size:0.88rem; font-weight:500; cursor:pointer; border-radius:2px; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:0.5rem; letter-spacing:0.02em; }
+  .search-btn:hover { background:var(--accent); }
+  .search-btn:disabled { opacity:0.5; cursor:not-allowed; }
+  .history-item { padding:0.7rem 0.9rem; border:1px solid var(--border); border-radius:2px; background:var(--bg); cursor:pointer; margin-bottom:0.5rem; transition:all 0.15s; }
+  .history-item:hover { border-color:var(--ink-dim); }
+  .history-item:last-child { margin-bottom:0; }
+  .history-topic { font-size:0.82rem; font-weight:500; color:var(--ink); margin-bottom:0.2rem; }
+  .history-meta { font-size:0.7rem; color:var(--ink-muted); font-family:'IBM Plex Mono',monospace; }
+  .right-panel { display:flex; flex-direction:column; overflow-y:auto; background:var(--bg); }
+  .empty-state { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:3rem; text-align:center; }
+  .empty-icon { font-size:2.5rem; margin-bottom:1.5rem; opacity:0.2; }
+  .empty-title { font-family:'Playfair Display',serif; font-size:1.6rem; font-weight:700; color:var(--ink); margin-bottom:0.5rem; opacity:0.35; }
+  .empty-sub { font-size:0.85rem; color:var(--ink-muted); max-width:380px; line-height:1.7; }
+  .example-queries { display:flex; flex-wrap:wrap; gap:0.5rem; justify-content:center; margin-top:2rem; }
+  .example-query { background:var(--white); border:1px solid var(--border); padding:0.4rem 1rem; border-radius:20px; font-size:0.78rem; color:var(--ink-muted); cursor:pointer; transition:all 0.15s; }
+  .example-query:hover { border-color:var(--accent); color:var(--accent); }
+  .loading-state { padding:2rem; display:none; flex-direction:column; gap:1rem; }
+  .loading-state.visible { display:flex; }
+  .loading-header { display:flex; align-items:center; gap:1rem; padding:1.5rem; background:var(--white); border:1px solid var(--border); border-radius:2px; }
+  .loading-spinner { width:18px; height:18px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; flex-shrink:0; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .loading-text { font-size:0.85rem; color:var(--ink); }
+  .loading-step { font-size:0.75rem; font-family:'IBM Plex Mono',monospace; color:var(--accent); margin-top:0.2rem; }
+  .loading-skeleton { background:var(--white); border:1px solid var(--border); border-radius:2px; height:110px; position:relative; overflow:hidden; }
+  .loading-skeleton::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg,transparent,rgba(0,0,0,0.025),transparent); animation:shimmer 1.5s ease-in-out infinite; }
+  @keyframes shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
+  .results-area { padding:2rem; display:none; flex-direction:column; gap:1.5rem; }
+  .results-area.visible { display:flex; }
+  .results-header { display:flex; align-items:flex-start; justify-content:space-between; padding-bottom:1.5rem; border-bottom:1px solid var(--border); }
+  .results-topic { font-family:'Playfair Display',serif; font-size:1.7rem; font-weight:900; line-height:1.15; letter-spacing:-0.02em; margin-bottom:0.5rem; }
+  .results-meta { display:flex; gap:1rem; flex-wrap:wrap; }
+  .meta-pill { font-size:0.7rem; font-family:'IBM Plex Mono',monospace; color:var(--ink-muted); display:flex; align-items:center; gap:0.3rem; }
+  .meta-pill span { color:var(--accent); }
+  .export-btn { background:var(--white); border:1px solid var(--border); color:var(--ink-muted); padding:0.5rem 1rem; font-size:0.75rem; font-family:'DM Sans',sans-serif; cursor:pointer; border-radius:2px; transition:all 0.15s; white-space:nowrap; }
+  .export-btn:hover { border-color:var(--ink); color:var(--ink); }
+  .summary-banner { padding:1rem 1.5rem; background:var(--accent-bg); border:1px solid rgba(200,68,26,0.2); border-left:3px solid var(--accent); border-radius:2px; font-size:0.92rem; font-style:italic; color:var(--ink); line-height:1.65; font-family:'Playfair Display',serif; }
+  .module-card { background:var(--white); border:1px solid var(--border); border-radius:2px; overflow:hidden; box-shadow:3px 3px 0 rgba(0,0,0,0.04); transition:box-shadow 0.2s; }
+  .module-card:hover { box-shadow:5px 5px 0 rgba(0,0,0,0.06); }
+  .module-header { padding:0.9rem 1.5rem; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:0.8rem; background:var(--bg); }
+  .module-icon { font-size:0.95rem; }
+  .module-title { font-size:0.68rem; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-muted); flex:1; }
+  .module-count { font-size:0.68rem; font-family:'IBM Plex Mono',monospace; color:var(--accent); background:var(--accent-bg); padding:0.15rem 0.5rem; border-radius:2px; border:1px solid rgba(200,68,26,0.2); }
+  .module-body { padding:1.5rem; }
+  .source-item { padding:1rem 1.1rem; border:1px solid var(--border); border-radius:2px; margin-bottom:0.6rem; background:var(--bg); transition:border-color 0.15s; }
+  .source-item:last-child { margin-bottom:0; }
+  .source-item:hover { border-color:var(--ink-dim); }
+  .source-type { font-size:0.65rem; font-family:'IBM Plex Mono',monospace; color:var(--accent); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:0.25rem; }
+  .source-name { font-size:0.9rem; font-weight:500; color:var(--ink); margin-bottom:0.3rem; }
+  .source-desc { font-size:0.8rem; color:var(--ink-muted); line-height:1.5; }
+  .context-text { font-size:0.92rem; line-height:1.85; color:var(--ink); }
+  .context-text p { margin-bottom:1rem; }
+  .context-text p:last-child { margin-bottom:0; }
+  .voice-item { display:flex; gap:1rem; padding:1rem 1.1rem; border:1px solid var(--border); border-radius:2px; margin-bottom:0.6rem; background:var(--bg); }
+  .voice-item:last-child { margin-bottom:0; }
+  .voice-avatar { width:34px; height:34px; border-radius:50%; background:var(--border-light); display:flex; align-items:center; justify-content:center; font-size:0.9rem; flex-shrink:0; border:1px solid var(--border); }
+  .voice-name { font-size:0.88rem; font-weight:500; color:var(--ink); margin-bottom:0.15rem; }
+  .voice-role { font-size:0.65rem; color:var(--accent); margin-bottom:0.3rem; font-family:'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:0.06em; }
+  .voice-desc { font-size:0.8rem; color:var(--ink-muted); line-height:1.4; }
+  .alert-item { padding:1rem 1.2rem; border-radius:2px; margin-bottom:0.6rem; display:flex; gap:0.8rem; align-items:flex-start; }
+  .alert-item:last-child { margin-bottom:0; }
+  .alert-item.warning { background:rgba(180,40,40,0.05); border:1px solid rgba(180,40,40,0.2); }
+  .alert-item.caution { background:rgba(160,114,10,0.06); border:1px solid rgba(160,114,10,0.2); }
+  .alert-item.info { background:rgba(42,95,160,0.05); border:1px solid rgba(42,95,160,0.2); }
+  .alert-icon { font-size:1rem; flex-shrink:0; margin-top:0.1rem; }
+  .alert-text { font-size:0.83rem; color:var(--ink); line-height:1.55; }
+  .alert-text strong { font-weight:600; display:block; margin-bottom:0.2rem; }
+  .error-block { padding:0.8rem 1rem; background:rgba(180,40,40,0.06); border:1px solid rgba(180,40,40,0.2); border-radius:2px; font-size:0.82rem; color:#b42828; display:none; margin-bottom:0.5rem; }
+  .error-block.visible { display:block; }
+  ::-webkit-scrollbar { width:4px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+  ::-webkit-scrollbar-thumb:hover { background:var(--ink-dim); }
+  @media(max-width:900px){main{grid-template-columns:1fr;grid-template-rows:auto 1fr}.left-panel{max-height:55vh}header{padding:0 1rem}.header-sub{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo"><div class="logo-dot"></div>Newsground</div>
+    <div class="header-right">
+      <span class="header-tag">Beta</span>
+      <span class="header-sub">AI Research for Journalists</span>
+    </div>
+  </header>
+  <main>
+    <div class="left-panel">
+      <div class="panel-section">
+        <div class="panel-label">New Research</div>
+        <div class="field">
+          <label>Topic or story</label>
+          <textarea id="topicInput" placeholder="e.g. Protests after election results, Water crisis, Media censorship law..."></textarea>
+        </div>
+        <div class="field">
+          <label>Country or region</label>
+          <input type="text" id="countryInput" placeholder="e.g. Kenya, Bolivia, Bangladesh...">
+        </div>
+        <div class="field">
+          <label>Output language</label>
+          <select id="langInput">
+            <option value="English">English</option>
+            <option value="Spanish">Spanish</option>
+            <option value="French">French</option>
+            <option value="Portuguese">Portuguese</option>
+            <option value="Arabic">Arabic</option>
+            <option value="Italian">Italian</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Output modules</label>
+          <div class="module-toggles">
+            <label class="module-toggle active"><input type="checkbox" checked data-module="sources"><div class="toggle-dot"></div><span class="toggle-label">Primary Sources</span></label>
+            <label class="module-toggle active"><input type="checkbox" checked data-module="context"><div class="toggle-dot"></div><span class="toggle-label">Local Context</span></label>
+            <label class="module-toggle active"><input type="checkbox" checked data-module="voices"><div class="toggle-dot"></div><span class="toggle-label">Key Voices</span></label>
+            <label class="module-toggle active"><input type="checkbox" checked data-module="bias"><div class="toggle-dot"></div><span class="toggle-label">Bias Alerts</span></label>
+          </div>
+        </div>
+        <div class="error-block" id="errorBlock"></div>
+        <button class="search-btn" id="searchBtn" onclick="runSearch()">
+          <span id="searchBtnIcon">⚡</span><span id="searchBtnText">Run Research</span>
+        </button>
+      </div>
+      <div class="panel-section" id="historySection" style="display:none;">
+        <div class="panel-label">Recent Searches</div>
+        <div id="historyList"></div>
+      </div>
+    </div>
+    <div class="right-panel" id="rightPanel">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">🌍</div>
+        <div class="empty-title">Every story. Every country.</div>
+        <p class="empty-sub">Enter a topic and a country to get primary sources, local context, key voices and bias alerts — in seconds.</p>
+        <div class="example-queries">
+          <div class="example-query" onclick="fillExample('Election fraud allegations','Venezuela')">Election fraud · Venezuela</div>
+          <div class="example-query" onclick="fillExample('Flooding disaster','Bangladesh')">Flooding · Bangladesh</div>
+          <div class="example-query" onclick="fillExample('Press freedom crackdown','Ethiopia')">Press freedom · Ethiopia</div>
+          <div class="example-query" onclick="fillExample('Water scarcity protest','Pakistan')">Water scarcity · Pakistan</div>
+          <div class="example-query" onclick="fillExample('Military coup aftermath','Myanmar')">Military coup · Myanmar</div>
+          <div class="example-query" onclick="fillExample('AI regulation debate','European Union')">AI regulation · EU</div>
+        </div>
+      </div>
+      <div class="loading-state" id="loadingState">
+        <div class="loading-header">
+          <div class="loading-spinner"></div>
+          <div><div class="loading-text">Newsground AI is researching...</div><div class="loading-step" id="loadingStep">Scanning primary sources</div></div>
+        </div>
+        <div class="loading-skeleton"></div>
+        <div class="loading-skeleton"></div>
+        <div class="loading-skeleton"></div>
+      </div>
+      <div class="results-area" id="resultsArea">
+        <div class="results-header">
+          <div><div class="results-topic" id="resultsTopic"></div><div class="results-meta" id="resultsMeta"></div></div>
+          <button class="export-btn" onclick="exportResults()">↓ Export</button>
+        </div>
+        <div id="summaryBanner"></div>
+        <div id="sourcesModule"></div>
+        <div id="contextModule"></div>
+        <div id="voicesModule"></div>
+        <div id="biasModule"></div>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+  let searchHistory=[], lastResult=null, loadingInterval=null;
+  document.querySelectorAll('.module-toggle').forEach(t=>{
+    t.addEventListener('click',function(){const cb=this.querySelector('input');cb.checked=!cb.checked;this.classList.toggle('active',cb.checked);});
+  });
+  function getActiveModules(){return Array.from(document.querySelectorAll('.module-toggle input:checked')).map(e=>e.dataset.module);}
+  function fillExample(t,c){document.getElementById('topicInput').value=t;document.getElementById('countryInput').value=c;}
+  const loadingSteps=['Identifying primary sources...','Mapping local media landscape...','Analyzing political context...','Finding key voices & experts...','Checking for bias patterns...','Assembling your briefing...'];
+  function startLoadingAnimation(){let i=0;document.getElementById('loadingStep').textContent=loadingSteps[0];loadingInterval=setInterval(()=>{i=(i+1)%loadingSteps.length;document.getElementById('loadingStep').textContent=loadingSteps[i];},2000);}
+  function stopLoadingAnimation(){if(loadingInterval)clearInterval(loadingInterval);}
+  async function runSearch(){
+    const topic=document.getElementById('topicInput').value.trim();
+    const country=document.getElementById('countryInput').value.trim();
+    const lang=document.getElementById('langInput').value;
+    const modules=getActiveModules();
+    const eb=document.getElementById('errorBlock');
+    eb.classList.remove('visible');
+    if(!topic){eb.textContent='Please enter a topic or story.';eb.classList.add('visible');return;}
+    if(!country){eb.textContent='Please specify a country or region.';eb.classList.add('visible');return;}
+    if(!modules.length){eb.textContent='Please select at least one module.';eb.classList.add('visible');return;}
+    const btn=document.getElementById('searchBtn');
+    btn.disabled=true;
+    document.getElementById('searchBtnText').textContent='Researching...';
+    document.getElementById('searchBtnIcon').textContent='⏳';
+    document.getElementById('emptyState').style.display='none';
+    document.getElementById('resultsArea').classList.remove('visible');
+    document.getElementById('loadingState').classList.add('visible');
+    startLoadingAnimation();
+    try{
+      const res=await fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic,country,lang,modules})});
+      if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error||`Error ${res.status}`);}
+      const result=await res.json();
+      lastResult={topic,country,lang,modules,result,timestamp:new Date()};
+      addToHistory(topic,country);
+      renderResults(topic,country,result,modules);
+    }catch(err){
+      stopLoadingAnimation();
+      document.getElementById('loadingState').classList.remove('visible');
+      document.getElementById('emptyState').style.display='flex';
+      eb.textContent='Research failed: '+(err.message||'Unknown error.');
+      eb.classList.add('visible');
+    }finally{
+      btn.disabled=false;
+      document.getElementById('searchBtnText').textContent='Run Research';
+      document.getElementById('searchBtnIcon').textContent='⚡';
+      stopLoadingAnimation();
+      document.getElementById('loadingState').classList.remove('visible');
+    }
+  }
+  function renderResults(topic,country,result,modules){
+    document.getElementById('resultsTopic').textContent=`${topic} — ${country}`;
+    document.getElementById('resultsMeta').innerHTML=`<div class="meta-pill">🌍 <span>${country}</span></div><div class="meta-pill">📋 <span>${modules.length}</span> modules</div><div class="meta-pill">🕐 <span>${new Date().toLocaleTimeString()}</span></div>`;
+    document.getElementById('summaryBanner').innerHTML=result.summary?`<div class="summary-banner">${result.summary}</div>`:'';
+    document.getElementById('sourcesModule').innerHTML=(modules.includes('sources')&&result.sources)?`<div class="module-card"><div class="module-header"><span class="module-icon">📎</span><span class="module-title">Primary Sources</span><span class="module-count">${result.sources.length} found</span></div><div class="module-body">${result.sources.map(s=>`<div class="source-item"><div class="source-type">${s.type||'Source'}</div><div class="source-name">${s.name}</div><div class="source-desc">${s.description}</div></div>`).join('')}</div></div>`:'';
+    document.getElementById('contextModule').innerHTML=(modules.includes('context')&&result.context)?`<div class="module-card"><div class="module-header"><span class="module-icon">🗺️</span><span class="module-title">Local Context</span></div><div class="module-body"><div class="context-text">${result.context.split('\n').filter(p=>p.trim()).map(p=>`<p>${p}</p>`).join('')}</div></div></div>`:'';
+    document.getElementById('voicesModule').innerHTML=(modules.includes('voices')&&result.voices)?`<div class="module-card"><div class="module-header"><span class="module-icon">🎙️</span><span class="module-title">Key Voices</span><span class="module-count">${result.voices.length} identified</span></div><div class="module-body">${result.voices.map(v=>`<div class="voice-item"><div class="voice-avatar">${v.emoji||'👤'}</div><div><div class="voice-name">${v.name}</div><div class="voice-role">${v.role}</div><div class="voice-desc">${v.description}</div></div></div>`).join('')}</div></div>`:'';
+    const ai={'warning':'🔴','caution':'⚠️','info':'ℹ️'};
+    document.getElementById('biasModule').innerHTML=(modules.includes('bias')&&result.bias_alerts)?`<div class="module-card"><div class="module-header"><span class="module-icon">⚠️</span><span class="module-title">Bias & Disinformation Alerts</span><span class="module-count">${result.bias_alerts.length} flagged</span></div><div class="module-body">${result.bias_alerts.map(a=>`<div class="alert-item ${a.level||'caution'}"><div class="alert-icon">${ai[a.level]||'⚠️'}</div><div class="alert-text"><strong>${a.title}</strong>${a.detail}</div></div>`).join('')}</div></div>`:'';
+    document.getElementById('resultsArea').classList.add('visible');
+    document.getElementById('rightPanel').scrollTo({top:0,behavior:'smooth'});
+  }
+  function addToHistory(topic,country){
+    searchHistory.unshift({topic,country,time:new Date().toLocaleTimeString()});
+    if(searchHistory.length>8)searchHistory.pop();
+    document.getElementById('historySection').style.display='block';
+    document.getElementById('historyList').innerHTML=searchHistory.map(h=>`<div class="history-item" onclick="fillExample('${h.topic.replace(/'/g,"\\'")}','${h.country.replace(/'/g,"\\'")}')"><div class="history-topic">${h.topic}</div><div class="history-meta">${h.country} · ${h.time}</div></div>`).join('');
+  }
+  function exportResults(){
+    if(!lastResult)return;
+    const{topic,country,result}=lastResult;
+    let t=`NEWSGROUND RESEARCH BRIEFING\n${'='.repeat(50)}\nTopic: ${topic}\nCountry: ${country}\nDate: ${new Date().toLocaleString()}\n\n`;
+    if(result.summary)t+=`SUMMARY\n${result.summary}\n\n`;
+    if(result.sources){t+=`PRIMARY SOURCES\n${'-'.repeat(30)}\n`;result.sources.forEach(s=>{t+=`• ${s.name} [${s.type}]\n  ${s.description}\n\n`;});}
+    if(result.context)t+=`LOCAL CONTEXT\n${'-'.repeat(30)}\n${result.context}\n\n`;
+    if(result.voices){t+=`KEY VOICES\n${'-'.repeat(30)}\n`;result.voices.forEach(v=>{t+=`• ${v.name} — ${v.role}\n  ${v.description}\n\n`;});}
+    if(result.bias_alerts){t+=`BIAS ALERTS\n${'-'.repeat(30)}\n`;result.bias_alerts.forEach(a=>{t+=`[${a.level.toUpperCase()}] ${a.title}\n${a.detail}\n\n`;});}
+    t+=`\nGenerated by Newsground — newsground.ai`;
+    const blob=new Blob([t],{type:'text/plain'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download=`newsground-${topic.replace(/\s+/g,'-').toLowerCase()}.txt`;a.click();
+    URL.revokeObjectURL(url);
+  }
+  document.getElementById('countryInput').addEventListener('keydown',e=>{if(e.key==='Enter')runSearch();});
+</script>
+</body>
+</html>
