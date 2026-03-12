@@ -9,14 +9,31 @@ export default async function handler(req, res) {
   try {
     const { topic, country, lang, modules } = req.body;
 
-    const mi = {
-      sources: `"sources":[{"name":"...","type":"Official/NGO/Media/Academic/Civil Society","description":"..."}] — 4 to 6 specific real primary sources`,
-      context: `"context":"3-4 paragraphs of specific local political, historical and cultural context."`,
-      voices: `"voices":[{"name":"...","role":"...","description":"...","emoji":"one emoji"}] — 4 real key people`,
-      bias: `"bias_alerts":[{"level":"warning|caution|info","title":"...","detail":"..."}]`
-    };
+    const moduleParts = [];
+    if (modules.includes('sources')) moduleParts.push(`"sources": [{"name": "source name", "type": "Official/NGO/Media/Academic", "description": "what this source covers"}]`);
+    if (modules.includes('context')) moduleParts.push(`"context": "3-4 paragraphs of political, historical and cultural context"`);
+    if (modules.includes('voices')) moduleParts.push(`"voices": [{"name": "person name", "role": "their role", "description": "why they matter", "emoji": "one emoji"}]`);
+    if (modules.includes('bias')) moduleParts.push(`"bias_alerts": [{"level": "warning", "title": "alert title", "detail": "explanation"}]`);
 
-    const activeInstructions = modules.map(m => mi[m]).filter(Boolean).join(',\n');
+    const prompt = `You are Newsground, an AI research assistant for journalists.
+
+Research this topic and return ONLY a valid JSON object. No markdown, no backticks, no explanation.
+
+TOPIC: ${topic}
+COUNTRY: ${country}
+LANGUAGE FOR OUTPUT: ${lang}
+
+Return this exact JSON structure:
+{
+  "summary": "2-3 sentence overview of the situation",
+  ${moduleParts.join(',\n  ')}
+}
+
+Rules:
+- Return ONLY the JSON object, nothing else
+- Use real, specific names of institutions and people
+- Include 4-6 sources, 4 voices, 3-4 bias alerts
+- All text in ${lang}`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -28,18 +45,36 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
+        max_tokens: 2000,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        system: `You are Newsground, an expert AI research assistant for journalists. Be specific, name real institutions and people. Respond ONLY with valid JSON, no markdown.`,
-        messages: [{ role: 'user', content: `Research: TOPIC: ${topic}\nCOUNTRY: ${country}\nLANGUAGE: ${lang}\n\nReturn JSON: {"summary":"...","${activeInstructions}}` }]
+        messages: [{ role: 'user', content: prompt }]
       })
     });
 
     const data = await response.json();
-    const text = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
-    const match = text.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/);
-    if (!match) return res.status(500).json({ error: 'Could not parse output' });
-    return res.status(200).json(JSON.parse(match[0]));
+    
+    if (!data.content) {
+      return res.status(500).json({ error: 'No response from AI' });
+    }
+
+    const text = data.content
+      .filter(b => b.type === 'text')
+      .map(b => b.text)
+      .join('');
+
+    // Clean and extract JSON
+    const cleaned = text
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .trim();
+
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (!match) {
+      return res.status(500).json({ error: 'Could not parse AI response' });
+    }
+
+    const parsed = JSON.parse(match[0]);
+    return res.status(200).json(parsed);
 
   } catch (err) {
     return res.status(500).json({ error: err.message });
