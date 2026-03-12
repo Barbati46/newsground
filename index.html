@@ -241,7 +241,7 @@
     document.getElementById('loadingState').classList.add('visible');
     startLoadingAnimation();
     try{
-      const res=await fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic,country,lang,modules})});
+      const res=await fetch('/api/research',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic,country,lang,modules})});
       if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error||`Error ${res.status}`);}
       const result=await res.json();
       lastResult={topic,country,lang,modules,result,timestamp:new Date()};
